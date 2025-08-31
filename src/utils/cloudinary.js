@@ -1,0 +1,65 @@
+import { v2 as cloudinary } from "cloudinary";
+import fs from "fs";
+import { logger } from "./logger.js";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+// Configuration Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const uploadOnCloudinary = async (localFilePath) => {
+  if (!localFilePath) return null;
+
+  const removeLocalFile = async () => {
+    try {
+      if (fs.existsSync(localFilePath)) {
+        await fs.promises.unlink(localFilePath);
+        logger.info(`Deleted local file: ${localFilePath}`);
+      }
+    } catch (err) {
+      logger.error(`Failed to delete local file: ${localFilePath}`, err);
+    }
+  };
+
+  try {
+    const isPdf = localFilePath.toLowerCase().endsWith(".pdf");
+
+    const response = await cloudinary.uploader.upload(localFilePath, {
+      resource_type: isPdf ? "raw" : "auto",
+      access_mode: "public",
+    });
+
+    // Always remove local file after upload
+    await removeLocalFile();
+
+    if (!response.secure_url)
+      throw new Error("Cloudinary response missing URL");
+
+    return {
+      ...response,
+      iframeUrl: response.secure_url,
+      downloadUrl: response.secure_url,
+    };
+  } catch (error) {
+    // Remove file even if upload fails
+    await removeLocalFile();
+    logger.error("Cloudinary upload error:", error);
+    return null;
+  }
+};
+
+const deleteFromCloudinary = async (publicId) => {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+    return true;
+  } catch (error) {
+    throw new Error(error?.message || "Failed to delete image from Cloudinary");
+  }
+};
+
+export { uploadOnCloudinary, deleteFromCloudinary };
