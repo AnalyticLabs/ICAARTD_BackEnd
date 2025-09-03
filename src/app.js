@@ -39,12 +39,10 @@ app.use(
 );
 
 // Routes import
-import healthCheckRouter from "./routes/healthCheck.route.js";
 import userRouter from "./routes/user.route.js";
 import paperRouter from "./routes/paper.route.js";
 
 // Routes declaration
-app.use("/api/v1/healthCheck", healthCheckRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/papers", paperRouter);
 

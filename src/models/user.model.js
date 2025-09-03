@@ -42,11 +42,21 @@ const userSchema = new Schema(
       type: String,
       default: null,
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    otp: {
+      type: String,
+    },
+    otpExpires: {
+      type: Date,
+    },
   },
   { timestamps: true }
 );
 
-// Ensure only one fixed admin email is allowed
+// Only one fixed admin email is allowed
 userSchema.pre("save", async function (next) {
   if (this.email === process.env.ADMIN_EMAIL) {
     this.role = "admin";
