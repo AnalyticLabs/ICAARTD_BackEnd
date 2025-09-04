@@ -12,7 +12,7 @@ import {
 
 const router = express.Router();
 
-// ---------------- Author / Public routes ----------------
+// Author / Public routes
 router.post(
   "/submit",
   verifyJWT,
@@ -37,7 +37,7 @@ router.delete("/delete/:paperId", verifyJWT, deletePaper);
 
 router.get("/user/:email", verifyJWT, getUserPapers);
 
-// ---------------- Admin routes ----------------
+// Admin routes
 router.put("/status/:paperId", verifyJWT, isAdmin, updatePaperStatus);
 router.get("/", verifyJWT, isAdmin, getAllPapers);
 
