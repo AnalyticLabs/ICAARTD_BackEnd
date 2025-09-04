@@ -2,7 +2,6 @@ import { logger } from "./logger.js";
 import { ApiError } from "./ApiError.js";
 
 export const errorHandler = (err, req, res, next) => {
-  // If it's an instance of ApiError, use its status and message
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({
       success: false,
