@@ -16,5 +16,5 @@ COPY . .
 # Expose the backend port (change if needed, default 5000)
 EXPOSE 5000
 
-# Start the server
+# Start the server via index.js
 CMD ["node", "src/index.js"]
