@@ -29,14 +29,12 @@ const uploadOnCloudinary = async (localFilePath) => {
   try {
     const isPdf = localFilePath.toLowerCase().endsWith(".pdf");
 
-    // PDFs → raw (public), everything else → auto (public)
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: isPdf ? "raw" : "auto",
+      resource_type: "auto",
       type: "upload",
       use_filename: true,
       unique_filename: false,
       overwrite: true,
-      access_mode: "public",
     });
 
     await removeLocalFile();
