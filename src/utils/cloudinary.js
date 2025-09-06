@@ -12,14 +12,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Generate iframe-compatible URL for raw PDFs
-const getIframeUrl = (response, isPdf, isRaw) => {
-  if (isPdf && isRaw) {
-    return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/document/upload/${response.public_id}.pdf`;
-  }
-  return response.secure_url;
-};
-
 const uploadOnCloudinary = async (localFilePath) => {
   if (!localFilePath) return null;
 
@@ -48,11 +40,9 @@ const uploadOnCloudinary = async (localFilePath) => {
     if (!response.secure_url)
       throw new Error("Cloudinary response missing URL");
 
-    const isRaw = isPdf && response.resource_type === "raw";
-
     return {
       ...response,
-      iframeUrl: getIframeUrl(response, isPdf, isRaw),
+      iframeUrl: response.secure_url,
       downloadUrl: response.secure_url,
     };
   } catch (error) {
