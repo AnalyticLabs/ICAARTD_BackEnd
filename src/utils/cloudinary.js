@@ -30,7 +30,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     const isPdf = localFilePath.toLowerCase().endsWith(".pdf");
 
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: isPdf ? "raw" : "auto",
+      resource_type: "auto",
       type: "upload",
       access_mode: "public",
       use_filename: true,
