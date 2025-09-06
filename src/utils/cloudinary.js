@@ -82,7 +82,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     return {
       ...response,
       iframeUrl: isPdf
-        ? `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${response.public_id}.pdf`
+        ? `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${response.public_id}`
         : response.secure_url,
       downloadUrl: response.secure_url,
     };
