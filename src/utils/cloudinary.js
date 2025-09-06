@@ -31,7 +31,7 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: isPdf ? "raw" : "auto",
-      access_mode: "public",
+      type: "upload",
     });
 
     // Always remove local file after upload
