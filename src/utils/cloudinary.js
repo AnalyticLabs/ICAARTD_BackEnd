@@ -33,6 +33,9 @@ const uploadOnCloudinary = async (localFilePath) => {
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: isPdf ? "raw" : "auto",
       type: "upload",
+      use_filename: true,
+      unique_filename: false,
+      overwrite: true,
       access_mode: "public",
     });
 
