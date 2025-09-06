@@ -44,7 +44,7 @@ const uploadOnCloudinary = async (localFilePath) => {
     return {
       ...response,
       iframeUrl: response.secure_url,
-      downloadUrl: response.secure_url,
+      downloadUrl: `${response.secure_url}?fl_attachment`,
     };
   } catch (error) {
     await removeLocalFile();
