@@ -12,45 +12,6 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// const uploadOnCloudinary = async (localFilePath) => {
-//   if (!localFilePath) return null;
-
-//   const removeLocalFile = async () => {
-//     try {
-//       if (fs.existsSync(localFilePath)) {
-//         await fs.promises.unlink(localFilePath);
-//         logger.info(`Deleted local file: ${localFilePath}`);
-//       }
-//     } catch (err) {
-//       logger.error(`Failed to delete local file: ${localFilePath}`, err);
-//     }
-//   };
-
-//   try {
-//     const response = await cloudinary.uploader.upload(localFilePath, {
-//       resource_type: "auto",
-//       type: "upload",
-//     });
-
-//     // Always remove local file after upload
-//     await removeLocalFile();
-
-//     if (!response.secure_url)
-//       throw new Error("Cloudinary response missing URL");
-
-//     return {
-//       ...response,
-//       iframeUrl: response.secure_url,
-//       downloadUrl: response.secure_url,
-//     };
-//   } catch (error) {
-//     // Remove file even if upload fails
-//     await removeLocalFile();
-//     logger.error("Cloudinary upload error:", error);
-//     return null;
-//   }
-// };
-
 const uploadOnCloudinary = async (localFilePath) => {
   if (!localFilePath) return null;
 
@@ -68,10 +29,11 @@ const uploadOnCloudinary = async (localFilePath) => {
   try {
     const isPdf = localFilePath.toLowerCase().endsWith(".pdf");
 
-    // PDFs → raw (publicly accessible), everything else → auto
+    // PDFs → raw (public), everything else → auto (public)
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: isPdf ? "raw" : "auto",
       type: "upload",
+      access_mode: "public",
     });
 
     await removeLocalFile();
@@ -81,9 +43,7 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     return {
       ...response,
-      iframeUrl: isPdf
-        ? `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/raw/upload/${response.public_id}`
-        : response.secure_url,
+      iframeUrl: response.secure_url,
       downloadUrl: response.secure_url,
     };
   } catch (error) {
