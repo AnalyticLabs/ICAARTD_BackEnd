@@ -12,6 +12,14 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+// Generate iframe-compatible URL for raw PDFs
+const getIframeUrl = (response, isPdf, isRaw) => {
+  if (isPdf && isRaw) {
+    return `https://res.cloudinary.com/${process.env.CLOUDINARY_CLOUD_NAME}/document/upload/${response.public_id}.pdf`;
+  }
+  return response.secure_url;
+};
+
 const uploadOnCloudinary = async (localFilePath) => {
   if (!localFilePath) return null;
 
@@ -40,9 +48,11 @@ const uploadOnCloudinary = async (localFilePath) => {
     if (!response.secure_url)
       throw new Error("Cloudinary response missing URL");
 
+    const isRaw = isPdf && response.resource_type === "raw";
+
     return {
       ...response,
-      iframeUrl: response.secure_url,
+      iframeUrl: getIframeUrl(response, isPdf, isRaw),
       downloadUrl: response.secure_url,
     };
   } catch (error) {
@@ -53,9 +63,9 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-const deleteFromCloudinary = async (publicId) => {
+const deleteFromCloudinary = async (publicId, resource_type = "auto") => {
   try {
-    await cloudinary.uploader.destroy(publicId);
+    await cloudinary.uploader.destroy(publicId, { resource_type });
     return true;
   } catch (error) {
     throw new Error(error?.message || "Failed to delete image from Cloudinary");

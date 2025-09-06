@@ -35,10 +35,15 @@ const paperSchema = new Schema(
       type: String,
       required: [true, "PDF download URL is required"],
     },
+    pdfFilePublicId: {
+      type: String,
+      required: [true, "PDF public_id is required"],
+    },
 
     // Supplementary PDF URLs
     supplementaryViewerUrl: { type: String, default: null },
     supplementaryDownloadUrl: { type: String, default: null },
+    supplementaryPublicId: { type: String, default: null },
     status: {
       type: String,
       enum: [

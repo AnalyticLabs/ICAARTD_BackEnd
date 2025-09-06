@@ -48,11 +48,15 @@ const submitPaper = asyncHandler(async (req, res) => {
     keywords: Array.isArray(keywords) ? keywords : keywords.split(","),
     pdfFileViewerUrl: pdfUpload.iframeUrl,
     pdfFileDownloadUrl: pdfUpload.downloadUrl,
+    pdfFilePublicId: pdfUpload.public_id,
     supplementaryViewerUrl: supplementaryUpload
       ? supplementaryUpload.iframeUrl
       : null,
     supplementaryDownloadUrl: supplementaryUpload
       ? supplementaryUpload.downloadUrl
+      : null,
+    supplementaryPublicId: supplementaryUpload
+      ? supplementaryUpload.public_id
       : null,
     status: "Submitted",
   });
@@ -92,23 +96,50 @@ const updatePaper = asyncHandler(async (req, res) => {
   updateData.status = "Submitted";
 
   // Update main PDF
+  // if (req.files?.pdfFile?.[0]?.path) {
+  //   if (paper.pdfFileDownloadUrl) {
+  //     const oldPdfPublicId = getPublicIdFromUrl(paper.pdfFileDownloadUrl);
+  //     if (oldPdfPublicId) await deleteFromCloudinary(oldPdfPublicId);
+  //   }
+  //   const pdfUpload = await uploadOnCloudinary(req.files.pdfFile[0].path);
+  //   if (pdfUpload) {
+  //     updateData.pdfFileViewerUrl = pdfUpload.iframeUrl;
+  //     updateData.pdfFileDownloadUrl = pdfUpload.downloadUrl;
+  //   }
+  // }
+
+  // // Update supplementary PDF
+  // if (req.files?.supplementaryPdf?.[0]?.path) {
+  //   if (paper.supplementaryDownloadUrl) {
+  //     const oldSupPublicId = getPublicIdFromUrl(paper.supplementaryDownloadUrl);
+  //     if (oldSupPublicId) await deleteFromCloudinary(oldSupPublicId);
+  //   }
+  //   const supUpload = await uploadOnCloudinary(
+  //     req.files.supplementaryPdf[0].path
+  //   );
+  //   if (supUpload) {
+  //     updateData.supplementaryViewerUrl = supUpload.iframeUrl;
+  //     updateData.supplementaryDownloadUrl = supUpload.downloadUrl;
+  //   }
+  // }
+
+  // ---------------- Update main PDF ----------------
   if (req.files?.pdfFile?.[0]?.path) {
-    if (paper.pdfFileDownloadUrl) {
-      const oldPdfPublicId = getPublicIdFromUrl(paper.pdfFileDownloadUrl);
-      if (oldPdfPublicId) await deleteFromCloudinary(oldPdfPublicId);
+    if (paper.pdfFilePublicId) {
+      await deleteFromCloudinary(paper.pdfFilePublicId);
     }
     const pdfUpload = await uploadOnCloudinary(req.files.pdfFile[0].path);
     if (pdfUpload) {
       updateData.pdfFileViewerUrl = pdfUpload.iframeUrl;
       updateData.pdfFileDownloadUrl = pdfUpload.downloadUrl;
+      updateData.pdfFilePublicId = pdfUpload.public_id;
     }
   }
 
-  // Update supplementary PDF
+  // ---------------- Update supplementary PDF ----------------
   if (req.files?.supplementaryPdf?.[0]?.path) {
-    if (paper.supplementaryDownloadUrl) {
-      const oldSupPublicId = getPublicIdFromUrl(paper.supplementaryDownloadUrl);
-      if (oldSupPublicId) await deleteFromCloudinary(oldSupPublicId);
+    if (paper.supplementaryPublicId) {
+      await deleteFromCloudinary(paper.supplementaryPublicId);
     }
     const supUpload = await uploadOnCloudinary(
       req.files.supplementaryPdf[0].path
@@ -116,6 +147,7 @@ const updatePaper = asyncHandler(async (req, res) => {
     if (supUpload) {
       updateData.supplementaryViewerUrl = supUpload.iframeUrl;
       updateData.supplementaryDownloadUrl = supUpload.downloadUrl;
+      updateData.supplementaryPublicId = supUpload.public_id;
     }
   }
 
