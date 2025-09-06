@@ -9,10 +9,19 @@ const app = express();
 // Format of the logger
 const morganFormat = ":method :url :status :response-time ms";
 
+// Allowed Origins by specific domain
+const allowedOrigins = process.env.CORS_ORIGIN.split(",");
+
 // Common Middlewares
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
   })
 );
