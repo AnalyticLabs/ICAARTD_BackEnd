@@ -27,12 +27,13 @@ const uploadOnCloudinary = async (localFilePath) => {
   };
 
   try {
-    const isPdf = localFilePath.toLowerCase().endsWith(".pdf");
+    if (!localFilePath.toLowerCase().endsWith(".pdf")) {
+      throw new Error("Only PDF files are allowed");
+    }
 
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "raw",
-      type: "upload",
-      access_mode: "public",
+      folder: "pdf_files",
       use_filename: true,
       unique_filename: false,
       overwrite: true,
