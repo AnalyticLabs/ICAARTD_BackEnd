@@ -2,7 +2,6 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import { logger } from "./logger.js";
 import dotenv from "dotenv";
-import { logger } from "./utils/logger.js";
 
 dotenv.config();
 
