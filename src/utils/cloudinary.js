@@ -41,6 +41,7 @@ const uploadOnCloudinary = async (localFilePath) => {
 
     console.log("Pdf URL: ", response.url);
     console.log("Secure_URL: ", response.secure_url);
+    console.log("Response: ", response);
 
     await removeLocalFile();
 
