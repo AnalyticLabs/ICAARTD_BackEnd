@@ -2,6 +2,7 @@ import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import { logger } from "./logger.js";
 import dotenv from "dotenv";
+import { logger } from "./utils/logger.js";
 
 dotenv.config();
 
@@ -32,12 +33,15 @@ const uploadOnCloudinary = async (localFilePath) => {
     }
 
     const response = await cloudinary.uploader.upload(localFilePath, {
-      resource_type: "raw",
+      // resource_type: "raw",
       folder: "pdf_files",
       use_filename: true,
       unique_filename: false,
-      overwrite: true,
+      // overwrite: true,
     });
+
+    console.log("Pdf URL: ", response.url);
+    console.log("Secure_URL: ", response.secure_url);
 
     await removeLocalFile();
 
