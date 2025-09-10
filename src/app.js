@@ -10,7 +10,7 @@ const app = express();
 const morganFormat = ":method :url :status :response-time ms";
 
 // Allowed Origins by specific domain
-const allowedOrigins = process.env.CORS_ORIGIN.split(",").map((o) => o.trim());
+const allowedOrigins = process.env.CORS_ORIGIN.split(",");
 
 // Common Middlewares
 app.use(
