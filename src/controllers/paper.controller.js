@@ -8,15 +8,6 @@ import {
 } from "../utils/cloudinary.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
-// Helper to extract publicId from Cloudinary URL
-const getPublicIdFromUrl = (url) => {
-  if (!url) return null;
-  const parts = url.split("/");
-  const fileWithExt = parts.pop();
-  const publicId = fileWithExt.split(".")[0];
-  return parts.slice(7).join("/") + "/" + publicId;
-};
-
 // ---------------- Submit Paper ----------------
 const submitPaper = asyncHandler(async (req, res) => {
   const { fullname, email, paperTitle, abstract, keywords } = req.body;
@@ -94,34 +85,6 @@ const updatePaper = asyncHandler(async (req, res) => {
       ? keywords
       : keywords.split(",");
   updateData.status = "Submitted";
-
-  // Update main PDF
-  // if (req.files?.pdfFile?.[0]?.path) {
-  //   if (paper.pdfFileDownloadUrl) {
-  //     const oldPdfPublicId = getPublicIdFromUrl(paper.pdfFileDownloadUrl);
-  //     if (oldPdfPublicId) await deleteFromCloudinary(oldPdfPublicId);
-  //   }
-  //   const pdfUpload = await uploadOnCloudinary(req.files.pdfFile[0].path);
-  //   if (pdfUpload) {
-  //     updateData.pdfFileViewerUrl = pdfUpload.iframeUrl;
-  //     updateData.pdfFileDownloadUrl = pdfUpload.downloadUrl;
-  //   }
-  // }
-
-  // // Update supplementary PDF
-  // if (req.files?.supplementaryPdf?.[0]?.path) {
-  //   if (paper.supplementaryDownloadUrl) {
-  //     const oldSupPublicId = getPublicIdFromUrl(paper.supplementaryDownloadUrl);
-  //     if (oldSupPublicId) await deleteFromCloudinary(oldSupPublicId);
-  //   }
-  //   const supUpload = await uploadOnCloudinary(
-  //     req.files.supplementaryPdf[0].path
-  //   );
-  //   if (supUpload) {
-  //     updateData.supplementaryViewerUrl = supUpload.iframeUrl;
-  //     updateData.supplementaryDownloadUrl = supUpload.downloadUrl;
-  //   }
-  // }
 
   // ---------------- Update main PDF ----------------
   if (req.files?.pdfFile?.[0]?.path) {
