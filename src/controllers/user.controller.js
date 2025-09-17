@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import jwt from "jsonwebtoken";
 import { sendEmail } from "../utils/sendEmail.js";
+import { PendingUser } from "../models/pendingUser.model.js";
 
 // Helper to generate access & refresh tokens
 const generateAccessAndRefreshToken = async (userId) => {
@@ -38,41 +39,30 @@ const registerUser = asyncHandler(async (req, res) => {
   if (password !== confirmPassword)
     throw new ApiError(400, "Passwords do not match");
 
+  // Check if already registered (verified)
   const existedUser = await User.findOne({ email });
+  if (existedUser)
+    throw new ApiError(409, "User with this email already exists");
 
-  // Role-based validation
-  if (role === "admin") {
-    if (email !== process.env.ADMIN_EMAIL) {
-      throw new ApiError(
-        403,
-        "Only official admin can register. Please register as an author."
-      );
-    }
-    if (existedUser) throw new ApiError(409, "Admin already exists");
-  } else {
-    // Author logic
-    if (existedUser)
-      throw new ApiError(409, "Author with this email already exists");
-  }
-
-  // Create user
-  const user = await User.create({
-    fullname,
-    email,
-    password,
-    confirmPassword,
-    role,
-  });
+  // If user has an old pending record, remove it
+  await PendingUser.deleteOne({ email });
 
   // Generate OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  user.otp = otp;
-  user.otpExpires = Date.now() + 10 * 60 * 1000;
-  await user.save({ validateBeforeSave: false });
+
+  // Save in PendingUser (password not hashed yet)
+  await PendingUser.create({
+    fullname,
+    email,
+    password,
+    role,
+    otp,
+    otpExpires: Date.now() + 10 * 60 * 1000,
+  });
 
   // Send OTP Email
   await sendEmail({
-    to: user.email,
+    to: email,
     subject: "Verify your email",
     text: `Your OTP is ${otp}. It is valid for 10 minutes.`,
   });
@@ -82,8 +72,8 @@ const registerUser = asyncHandler(async (req, res) => {
     .json(
       new ApiResponse(
         200,
-        { email: user.email, role: user.role },
-        "User registered successfully. Please verify your email with OTP."
+        { email, role },
+        "OTP sent successfully. Please verify your email."
       )
     );
 });
@@ -96,42 +86,32 @@ const verifyOtp = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email, OTP, and role are required");
   }
 
-  const user = await User.findOne({ email });
-  if (!user) throw new ApiError(404, "User not found");
+  const pending = await PendingUser.findOne({ email, role });
+  if (!pending) throw new ApiError(404, "No pending registration found");
 
-  // Role validation
-  if (role === "admin" && user.role !== "admin") {
-    throw new ApiError(
-      403,
-      "Only official admin can verify. Please verify as author."
-    );
-  }
-  if (role === "author" && user.role !== "author") {
-    throw new ApiError(
-      403,
-      "This email is registered as admin. Please verify as admin."
-    );
-  }
-
-  if (user.isVerified) {
-    return res
-      .status(200)
-      .json(new ApiResponse(200, {}, "User already verified"));
-  }
-
-  if (user.otp !== otp || user.otpExpires < Date.now()) {
+  if (pending.otp !== otp || pending.otpExpires < Date.now()) {
     throw new ApiError(400, "Invalid or expired OTP");
   }
 
-  user.isVerified = true;
-  user.otp = undefined;
-  user.otpExpires = undefined;
-  await user.save({ validateBeforeSave: false });
+  // Create actual user
+  const user = await User.create({
+    fullname: pending.fullname,
+    email: pending.email,
+    password: pending.password,
+    confirmPassword: pending.password,
+    role: pending.role,
+    isVerified: true,
+  });
 
-  // Generate tokens after successful verification
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    user._id
-  );
+  // Cleanup pending user
+  await PendingUser.deleteOne({ email });
+
+  // Generate tokens
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
 
   const verifiedUser = await User.findById(user._id).select(
     "-password -confirmPassword -refreshToken"
@@ -156,22 +136,27 @@ const resendOtp = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Email and role are required");
   }
 
-  const user = await User.findOne({ email, role });
-  if (!user) throw new ApiError(404, "User with this role not found");
-
-  if (user.isVerified) {
-    throw new ApiError(400, "User already verified");
+  // Find user in PendingUser collection
+  const pending = await PendingUser.findOne({ email, role });
+  if (!pending) {
+    throw new ApiError(
+      404,
+      "No pending registration found for this email and role"
+    );
   }
 
+  // Generate a new OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  user.otp = otp;
-  user.otpExpires = Date.now() + 10 * 60 * 1000;
-  await user.save({ validateBeforeSave: false });
+  pending.otp = otp;
+  pending.otpExpires = Date.now() + 10 * 60 * 1000;
 
+  await pending.save();
+
+  // Send new OTP email
   await sendEmail({
-    to: user.email,
+    to: pending.email,
     subject: `Resend OTP for ${role}`,
-    text: `Hello ${user.fullname},\n\nYour OTP for ${role} verification is ${otp}. It is valid for 10 minutes.\n\nThanks.`,
+    text: `Hello ${pending.fullname},\n\nYour new OTP for ${role} verification is ${otp}. It is valid for 10 minutes.\n\nThanks.`,
   });
 
   return res
@@ -182,9 +167,18 @@ const resendOtp = asyncHandler(async (req, res) => {
 // Login User
 const loginUser = asyncHandler(async (req, res) => {
   const { email, password, role } = req.body;
-  if (!email || !password || !role)
-    throw new ApiError(400, "All fields are required");
 
+  if (!email || !password || !role) {
+    throw new ApiError(400, "All fields are required");
+  }
+
+  // Check if user is stuck in PendingUser
+  const pending = await PendingUser.findOne({ email, role });
+  if (pending) {
+    throw new ApiError(403, "Please verify your email first before logging in");
+  }
+
+  // Now check in verified User collection
   const user = await User.findOne({ email }).select("+password");
   if (!user) {
     const msg =
@@ -208,20 +202,28 @@ const loginUser = asyncHandler(async (req, res) => {
     );
   }
 
+  // Check verified flag
   if (!user.isVerified) {
     throw new ApiError(403, "Please verify your email first");
   }
 
+  // Validate password
   const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) throw new ApiError(401, "Invalid credentials");
+  if (!isPasswordValid) {
+    throw new ApiError(401, "Invalid credentials");
+  }
 
-  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
-    user._id
-  );
+  // Generate tokens
+  const accessToken = user.generateAccessToken();
+  const refreshToken = user.generateRefreshToken();
+
+  user.refreshToken = refreshToken;
+  await user.save({ validateBeforeSave: false });
 
   const loggedInUser = await User.findById(user._id).select(
     "-password -confirmPassword -refreshToken"
   );
+
   const options = {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
