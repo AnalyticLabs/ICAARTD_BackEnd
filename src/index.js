@@ -8,8 +8,8 @@ dotenv.config({ path: "./.env" });
 
 connectDB()
   .then(() => {
-    app.listen(port, "0.0.0.0", () => {
-      logger.info(`Server listening at: http://0.0.0.0:${port}`);
+    app.listen(port, () => {
+      logger.info(`Server listening at: http://localhost:${port}`);
     });
   })
   .catch((error) => {
